@@ -43,21 +43,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (typeof window !== "undefined" && (window as any).MathJax) {
+      (window as any).MathJax.typesetPromise?.();
+    }
   }, [messages, loading]);
-
-   useEffect(() => {
-    if (loading) return;
-    if (typeof window === "undefined") return;
-    const mjx = (window as any).MathJax;
-    if (!mjx) return;
-    const bubbles = document.querySelectorAll(".bubble:not(.mathjax-done)");
-    if (bubbles.length === 0) return;
-    bubbles.forEach(b => b.classList.add("mathjax-done"));
-    mjx.typesetPromise?.(Array.from(bubbles));
-  }, [messages]);
-
   async function send() {
     const text = input.trim();
     if (!text || loading) return;
@@ -92,26 +83,6 @@ export default function Home() {
   return (
     <div className="page">
         <Script
-        id="mathjax-config"
-        strategy="beforeInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-            window.MathJax = {
-              tex: {
-                inlineMath: [['\\\\(', '\\\\)']],
-                displayMath: [['\\\\[', '\\\\]']],
-              },
-              options: {
-                skipHtmlTags: ['script','noscript','style','textarea','pre'],
-                ignoreHtmlClass: 'mathjax-done',
-              },
-              startup: { typeset: false }
-            };
-          `
-        }}
-      />
-      <Script
-        id="mathjax-script"
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
         strategy="afterInteractive"
       />
