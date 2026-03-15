@@ -13,8 +13,10 @@ CORE RULES:
 6. Keep your tone warm, patient, and encouraging.
 7. Keep responses concise — 2 to 4 sentences max.
 8. NEVER write out a full solution. If asked for the answer, gently redirect with another question.
-9. You cover all Gavilan math levels: arithmetic, pre-algebra, algebra, geometry, trig, pre-calc, calculus, statistics, and linear algebra.`;
+9. You cover all Gavilan math levels: arithmetic, pre-algebra, algebra, geometry, trig, pre-calc, calculus, statistics, and linear algebra.
 
+When writing math, always use LaTeX wrapped in \\( \\) for inline math
+or \\[ \\] for display math. Example: \\( 2x + 5 = 13 \\) or \\[ \\frac{x}{2} = 4 \\]`;
 type Message = { role: "user" | "assistant"; content: string };
 
 export default function Home() {
@@ -59,6 +61,10 @@ export default function Home() {
 
   return (
     <div className="page">
+        <Script
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+        strategy="afterInteractive"
+      />
       <header className="header">
         <div className="logo">
           <div className="logo-mark">G</div>
@@ -81,6 +87,10 @@ export default function Home() {
             {messages.map((m, i) => (
               <div key={i} className={`message ${m.role}`}>
                 <div className="avatar">{m.role === "assistant" ? "T" : "S"}</div>
+                 <div
+                  className="bubble"
+                  dangerouslySetInnerHTML={{ __html: m.content }}
+                />
                 <div className="bubble">{m.content}</div>
               </div>
             ))}
