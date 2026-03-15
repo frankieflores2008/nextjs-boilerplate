@@ -24,33 +24,43 @@ export async function POST(req: NextRequest) {
       parts: [{ text: String(m.content) }],
     }));
 
-    const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: system }] },
-          contents: geminiMessages,
-        }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("Gemini API error:", JSON.stringify(data));
-      return NextResponse.json(
-        { error: data.error?.message || "Gemini API error" },
-        { status: response.status }
+    for (const model of MODELS) {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: system }] },
+            contents: geminiMessages,
+          }),
+        }
       );
+
+      if (response.status === 429 || response.status === 503 || response.status === 500) {
+        console.log(`Model ${model} failed with ${response.status}, trying next...`);
+        continue;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error(`Error on ${model}:`, JSON.stringify(data));
+        continue;
+      }
+
+      const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text
+        || "Something went wrong, please try again.";
+      return NextResponse.json({
+        content: [{ text: replyText }],
+        model_used: model,
+      });
     }
 
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || "Something went wrong, please try again.";
-
-    return NextResponse.json({
-      content: [{ text: replyText }]
-    });
-
+    return NextResponse.json(
+      { error: "All models are rate limited. Please wait a moment and try again." },
+      { status: 429 }
+    );
   } catch (err) {
     console.error("Route error:", err);
     return NextResponse.json(
