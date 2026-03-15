@@ -48,10 +48,21 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).MathJax) {
-      (window as any).MathJax.typesetPromise?.();
-    }
+   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mjx = (window as any).MathJax;
+    if (!mjx) return;
+    const bubbles = document.querySelectorAll(".bubble:not([data-rendered])");
+    if (bubbles.length === 0) return;
+    mjx.typesetPromise?.(Array.from(bubbles)).then(() => {
+      bubbles.forEach(el => {
+        el.setAttribute("data-rendered", "true");
+        const idx = Number((el as HTMLElement).dataset.index);
+        setMessages(prev => prev.map((m, i) =>
+          i === idx ? { ...m, content: el.innerHTML } : m
+        ));
+      });
+    });
   }, [messages]);
 
   async function send() {
