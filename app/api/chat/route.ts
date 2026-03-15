@@ -5,36 +5,52 @@ export async function POST(req: NextRequest) {
 
   if (!apiKey) {
     return NextResponse.json(
-      { error: "API key not configured. Add ANTHROPIC_API_KEY to Vercel environment variables." },
+      { error: "API key not configured." },
       { status: 500 }
     );
   }
 
-  const { system, messages } = await req.json();
+  try {
+    const body = await req.json();
+    const { system, messages } = body;
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 512,
-      system,
-      messages,
-    }),
-  });
+    const filtered = messages.map((m: { role: string; content: string }) => ({
+      role: m.role === "user" ? "user" : "assistant",
+      content: String(m.content),
+    }));
 
-  const data = await response.json();
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 512,
+        system: String(system),
+        messages: filtered,
+      }),
+    });
 
-  if (!response.ok) {
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Claude API error:", JSON.stringify(data));
+      return NextResponse.json(
+        { error: data.error?.message || "Claude API error" },
+        { status: response.status }
+      );
+    }
+
+    return NextResponse.json(data);
+
+  } catch (err) {
+    console.error("Route error:", err);
     return NextResponse.json(
-      { error: data.error?.message || "Claude API error" },
-      { status: response.status }
+      { error: "Server error: " + String(err) },
+      { status: 500 }
     );
   }
-
-  return NextResponse.json(data);
 }
