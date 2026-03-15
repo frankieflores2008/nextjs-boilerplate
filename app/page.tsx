@@ -43,12 +43,21 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-useEffect(() => {
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    if (typeof window !== "undefined" && (window as any).MathJax) {
-      (window as any).MathJax.typesetPromise?.();
-    }
   }, [messages, loading]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (typeof window === "undefined") return;
+    const mjx = (window as any).MathJax;
+    if (!mjx) return;
+    const lastBubble = document.querySelectorAll(".bubble");
+    const target = lastBubble[lastBubble.length - 1];
+    if (target) {
+      mjx.typesetPromise?.([target]);
+    }
+  }, [messages]);
 
   async function send() {
     const text = input.trim();
