@@ -141,7 +141,6 @@ h1 em { font-style: italic; color: var(--accent); }
 .message.user .avatar { background: var(--ink); }
 
 .bubble {
-  max-width: 78%;
   padding: 14px 18px;
   border-radius: 18px;
   font-size: 15px;
@@ -270,4 +269,11 @@ textarea:disabled { opacity: 0.6; }
   .header { padding: 16px 20px; }
   .badge { display: none; }
   .main { padding: 40px 16px 60px; }
+}
+.bubble-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 78%; }
+
+.model-tag {
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding-left: 4px;
 }
