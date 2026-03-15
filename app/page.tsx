@@ -42,15 +42,29 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const renderedCache = useRef<Map<number, string>>(new Map());
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && (window as any).MathJax) {
-      (window as any).MathJax.typesetPromise?.();
-    }
+ useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mjx = (window as any).MathJax;
+    if (!mjx) return;
+    const unrendered = Array.from(
+      document.querySelectorAll(".bubble[data-index]")
+    ).filter(el => {
+      const idx = Number((el as HTMLElement).dataset.index);
+      return !renderedCache.current.has(idx);
+    });
+    if (unrendered.length === 0) return;
+    mjx.typesetPromise?.(unrendered).then(() => {
+      unrendered.forEach(el => {
+        const idx = Number((el as HTMLElement).dataset.index);
+        renderedCache.current.set(idx, el.innerHTML);
+      });
+    });
   }, [messages]);
   async function send() {
     const text = input.trim();
@@ -112,8 +126,9 @@ export default function Home() {
               <div key={i} className={`message ${m.role}`}>
                 <div className="avatar">{m.role === "assistant" ? "T" : "S"}</div>
                 <div className="bubble-wrap">
-                  <div
+                 <div
                     className="bubble"
+                    data-index={i}
                     dangerouslySetInnerHTML={{ __html: m.content }}
                   />
                   {m.role === "assistant" && m.model && (
