@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import Script from "next/script";
 
 const SYSTEM_PROMPT = `You are a Socratic math tutor for students at Gavilan College in Gilroy, California. Your role is to help students genuinely understand math — not to give them answers.
 
