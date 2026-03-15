@@ -21,7 +21,7 @@ GENERAL RULES:
    - An equation: \\( x^2 + 5x + 6 = 0 \\)
    - A fraction: \\( \\frac{x}{2} = 4 \\)
    - Display math: \\[ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]`;
-type Message = { role: "user" | "assistant"; content: string };
+type Message = { role: "user" | "assistant"; content: string; model?: string };
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -53,8 +53,11 @@ useEffect(() => {
       });
       const data = await res.json();
       const reply = data.content?.[0]?.text || "Something went wrong, please try again.";
-      setMessages([...newMessages, { role: "assistant", content: reply }]);
-    } catch {
+      setMessages([...newMessages, {
+        role: "assistant",
+        content: reply,
+        model: data.model_used,
+      }]);    } catch {
       setMessages([...newMessages, { role: "assistant", content: "Network error — please try again." }]);
     }
     setLoading(false);
@@ -94,10 +97,15 @@ useEffect(() => {
             {messages.map((m, i) => (
               <div key={i} className={`message ${m.role}`}>
                 <div className="avatar">{m.role === "assistant" ? "T" : "S"}</div>
-                 <div
-                  className="bubble"
-                  dangerouslySetInnerHTML={{ __html: m.content }}
-                />
+                <div className="bubble-wrap">
+                  <div
+                    className="bubble"
+                    dangerouslySetInnerHTML={{ __html: m.content }}
+                  />
+                  {m.role === "assistant" && m.model && (
+                    <div className="model-tag">{m.model}</div>
+                  )}
+                </div>
               </div>
             ))}
             {loading && (
