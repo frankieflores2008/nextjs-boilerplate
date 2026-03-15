@@ -91,7 +91,6 @@ export default function Home() {
                   className="bubble"
                   dangerouslySetInnerHTML={{ __html: m.content }}
                 />
-                <div className="bubble">{m.content}</div>
               </div>
             ))}
             {loading && (
