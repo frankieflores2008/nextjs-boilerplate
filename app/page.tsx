@@ -124,19 +124,16 @@ export default function Home() {
     setTimeout(() => mqWrapRef.current?.querySelector("textarea")?.focus(), 50);
   }
 
-  async function send() {
+ async function send() {
     if (loading) return;
     if (!mqFieldRef.current) return;
     const latex = mqFieldRef.current.latex().trim();
     if (!latex) return;
-    const renderedHTML = mqWrapRef.current?.innerHTML || `\\(${latex}\\)`;
     mqFieldRef.current.latex("");
-    const newMessages: Message[] = [...messages, {
-      role: "user",
-      content: renderedHTML,
-    }];
+    const display = `\\(${latex}\\)`;
+    const newMessages: Message[] = [...messages, { role: "user", content: display }];
     setMessages(newMessages);
-    await callAPI([...messages, { role: "user", content: latex }]);
+    await callAPI(newMessages);
   }
 
   async function sendPractice(topic: string) {
