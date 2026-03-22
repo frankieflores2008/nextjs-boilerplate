@@ -365,14 +365,9 @@ textarea:disabled { opacity: 0.6; }
   padding: 4px 14px;
   cursor: text;
   transition: border-color 0.2s;
-  overflow: visible;
   position: relative;
-  z-index: 1;
-}
-
-.mq-input .mq-editable-field {
-  position: relative;
-  z-index: 2;
+  display: flex;
+  align-items: center;
 }
 
 .mq-input:focus-within { border-color: var(--accent); }
@@ -385,29 +380,16 @@ textarea:disabled { opacity: 0.6; }
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
-  padding: 4px 0 !important;
-  margin: 0 !important;
   font-size: 16px !important;
-  line-height: 36px !important;
-  position: relative !important;
-  z-index: 2 !important;
-  display: block !important;
 }
 
-.mq-input .mq-root-block {
-  min-height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-.mq-input .mq-cursor {
-  border-left: 2px solid var(--accent) !important;
-  height: 1.2em !important;
-}
-
-.mq-input .mq-root-block {
-  padding: 0 !important;
-  margin: 0 !important;
+.mq-input .mq-textarea textarea {
+  opacity: 0 !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
 }
 
 .mq-hint {
@@ -424,24 +406,4 @@ textarea:disabled { opacity: 0.6; }
   padding: 1px 5px;
   border-radius: 4px;
   font-size: 11px;
-}
-
-.mq-input .mq-textarea {
-  position: absolute !important;
-  clip: rect(0 0 0 0) !important;
-  width: 1px !important;
-  height: 1px !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  white-space: nowrap !important;
-}
-.mq-input .mq-cursor {
-  border-color: var(--accent) !important;
-}
-
-
-
-.mq-input var,
-.mq-input .mq-operator-name {
-  font-style: normal !important;
 }
