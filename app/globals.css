@@ -418,10 +418,7 @@ textarea:disabled { opacity: 0.6; }
   border-color: var(--accent) !important;
 }
 
-.mq-input span.mq-scaled {
-  display: inline !important;
-  position: static !important;
-}
+
 
 .mq-input var,
 .mq-input .mq-operator-name {
