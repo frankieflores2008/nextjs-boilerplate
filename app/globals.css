@@ -385,10 +385,24 @@ textarea:disabled { opacity: 0.6; }
   outline: none !important;
   box-shadow: none !important;
   background: transparent !important;
-  padding: 0 !important;
+  padding: 4px 0 !important;
   margin: 0 !important;
   font-size: 16px !important;
   line-height: 36px !important;
+  position: relative !important;
+  z-index: 2 !important;
+  display: block !important;
+}
+
+.mq-input .mq-root-block {
+  min-height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.mq-input .mq-cursor {
+  border-left: 2px solid var(--accent) !important;
+  height: 1.2em !important;
 }
 
 .mq-input .mq-root-block {
