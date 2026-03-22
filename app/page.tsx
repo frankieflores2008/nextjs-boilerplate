@@ -38,7 +38,18 @@ GENERAL RULES:
    - A fraction: \\( \\frac{x}{2} = 4 \\)
    - Display math: \\[ x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a} \\]`;
 
-type Message = { role: "user" | "assistant"; content: string; model?: string };
+type Message = { role: "user" | "assistant"; content: string; model?: string; isLatex?: boolean };
+
+function renderLatexToHTML(latex: string): string {
+  try {
+    return (window as any).katex.renderToString(latex, {
+      throwOnError: false,
+      displayMode: false,
+    });
+  } catch {
+    return latex;
+  }
+}
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
@@ -80,6 +91,8 @@ export default function Home() {
     if (!MQ) return;
     mqFieldRef.current = MQ.MathField(mqWrapRef.current, {
       spaceBehavesLikeTab: false,
+      autoCommands: "pi theta sqrt sum int",
+      autoOperatorNames: "sin cos tan log ln",
       handlers: {
         enter: () => { send(); }
       }
@@ -101,7 +114,10 @@ export default function Home() {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ system: SYSTEM_PROMPT, messages: newMessages }),
+        body: JSON.stringify({ system: SYSTEM_PROMPT, messages: newMessages.map(m => ({
+          role: m.role,
+          content: m.isLatex ? `The student typed this math expression: \\(${m.content}\\)` : m.content,
+        }))}),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -124,15 +140,35 @@ export default function Home() {
     setTimeout(() => mqWrapRef.current?.querySelector("textarea")?.focus(), 50);
   }
 
- async function send() {
+  async function send() {
     if (loading) return;
     if (!mqFieldRef.current) return;
     const latex = mqFieldRef.current.latex().trim();
     if (!latex) return;
     mqFieldRef.current.latex("");
-    const display = `\\(${latex}\\)`;
-    const newMessages: Message[] = [...messages, { role: "user", content: display }];
-    setMessages(newMessages);
+
+    let displayContent: string;
+    try {
+      displayContent = (window as any).katex.renderToString(latex, {
+        throwOnError: false,
+        displayMode: false,
+      });
+    } catch {
+      displayContent = `\\(${latex}\\)`;
+    }
+
+    const newMessages: Message[] = [...messages, {
+      role: "user",
+      content: latex,
+      isLatex: true,
+    }];
+
+    setMessages(prev => [...prev, {
+      role: "user",
+      content: displayContent,
+      isLatex: true,
+    }]);
+
     await callAPI(newMessages);
   }
 
@@ -153,10 +189,15 @@ export default function Home() {
   return (
     <div className="page">
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.css"/>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"/>
       <Script
         src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
         strategy="afterInteractive"
         onLoad={handleJqueryLoad}
+      />
+      <Script
+        src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+        strategy="afterInteractive"
       />
       <Script
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
@@ -189,6 +230,7 @@ export default function Home() {
                   <div
                     className="bubble"
                     data-index={i}
+                    data-rendered={m.isLatex ? "true" : undefined}
                     dangerouslySetInnerHTML={{ __html: m.content }}
                   />
                   {m.role === "assistant" && m.model && (
@@ -209,8 +251,7 @@ export default function Home() {
           <div className="input-area">
             <div
               ref={mqWrapRef}
-              className={`mq-input ${loading ? "mq-disabled" : ""} ${!mqReady ? "mq-loading" : ""}`}
-              data-placeholder={mqReady ? "" : "Loading math input..."}
+              className={`mq-input ${loading ? "mq-disabled" : ""}`}
             />
             <button onClick={send} disabled={loading}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -219,7 +260,7 @@ export default function Home() {
             </button>
           </div>
           <div className="mq-hint">
-            Type math naturally — <code>1/2</code> → fraction, <code>sqrt</code> → √, <code>x^2</code> → x²
+            Type math naturally — <code>1/2</code> → fraction · <code>sqrt</code> → √ · <code>x^2</code> → x²  · <code>pi</code> → π
           </div>
         </div>
 
@@ -227,11 +268,7 @@ export default function Home() {
           <div className="topics-label">Covers all Gavilan math courses</div>
           <div className="chips">
             {topics.map(t => (
-              <button key={t} className="chip" onClick={() => {
-                if (!mqFieldRef.current) return;
-                mqFieldRef.current.latex(t.toLowerCase().replace("-", " "));
-                mqWrapRef.current?.querySelector("textarea")?.focus();
-              }}>
+              <button key={t} className="chip" onClick={() => setInput(`I need help with a ${t} problem.`)}>
                 {t}
               </button>
             ))}
