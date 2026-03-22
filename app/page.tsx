@@ -23,7 +23,11 @@ If they get something right, acknowledge it warmly and ask what comes next.
 If they make an error, don't correct them directly — ask a question that helps
 them see the mistake.
 
+TYPE 3 — PRACTICE PROBLEM:
+When you receive a message starting with [PRACTICE], generate a single math problem at the specified difficulty and topic. Do not solve it. Present it clearly, then ask the student to give it a try. After presenting the problem, use the Socratic method to guide them through it.
+
 WHEN IN DOUBT between Type 1 and Type 2, default to Type 1 and explain fully.
+
 GENERAL RULES:
 1. Keep responses concise — 3 to 5 sentences max.
 2. Never be condescending or impatient.
@@ -42,13 +46,15 @@ export default function Home() {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPractice, setShowPractice] = useState(false);
+  const [practiceLevel, setPracticeLevel] = useState("Medium");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const mjx = (window as any).MathJax;
     if (!mjx) return;
@@ -65,12 +71,7 @@ export default function Home() {
     });
   }, [messages]);
 
-  async function send() {
-    const text = input.trim();
-    if (!text || loading) return;
-    const newMessages: Message[] = [...messages, { role: "user", content: text }];
-    setMessages(newMessages);
-    setInput("");
+  async function callAPI(newMessages: Message[]) {
     setLoading(true);
     try {
       const res = await fetch("/api/chat", {
@@ -78,6 +79,10 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ system: SYSTEM_PROMPT, messages: newMessages }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server error ${res.status}`);
+      }
       const data = await res.json();
       const reply = data.content?.[0]?.text || "Something went wrong, please try again.";
       setMessages([...newMessages, {
@@ -85,10 +90,33 @@ export default function Home() {
         content: reply,
         model: data.model_used,
       }]);
-    } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Network error — please try again." }]);
+    } catch (err) {
+      setMessages([...newMessages, {
+        role: "assistant",
+        content: "Network error — please try again.",
+      }]);
     }
     setLoading(false);
+  }
+
+  async function send() {
+    const text = input.trim();
+    if (!text || loading) return;
+    const newMessages: Message[] = [...messages, { role: "user", content: text }];
+    setMessages(newMessages);
+    setInput("");
+    await callAPI(newMessages);
+  }
+
+  async function sendPractice(topic: string) {
+    if (loading) return;
+    setShowPractice(false);
+    const practiceMessage = `[PRACTICE] Generate a ${practiceLevel} difficulty ${topic} problem for a Gavilan College student.`;
+    const visibleMessage = `Give me a ${practiceLevel.toLowerCase()} ${topic} practice problem.`;
+    const newMessages: Message[] = [...messages, { role: "user", content: visibleMessage }];
+    const apiMessages: Message[] = [...messages, { role: "user", content: practiceMessage }];
+    setMessages(newMessages);
+    await callAPI(apiMessages);
   }
 
   function handleKey(e: React.KeyboardEvent) {
@@ -96,6 +124,7 @@ export default function Home() {
   }
 
   const topics = ["Arithmetic","Pre-Algebra","Algebra","Geometry","Trigonometry","Pre-Calculus","Calculus","Statistics","Linear Algebra"];
+  const difficulties = ["Easy", "Medium", "Hard"];
 
   return (
     <div className="page">
@@ -172,6 +201,46 @@ export default function Home() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="practice-section">
+          <button
+            className="practice-btn"
+            onClick={() => setShowPractice(!showPractice)}
+            disabled={loading}
+          >
+            ✦ Give me a practice problem
+          </button>
+
+          {showPractice && (
+            <div className="practice-panel">
+              <div className="practice-label">Difficulty</div>
+              <div className="difficulty-chips">
+                {difficulties.map(d => (
+                  <button
+                    key={d}
+                    className={`difficulty-chip ${practiceLevel === d ? "active" : ""}`}
+                    onClick={() => setPracticeLevel(d)}
+                  >
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <div className="practice-label" style={{ marginTop: "14px" }}>Topic</div>
+              <div className="chips">
+                {topics.map(t => (
+                  <button
+                    key={t}
+                    className="chip practice-topic"
+                    onClick={() => sendPractice(t)}
+                    disabled={loading}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
