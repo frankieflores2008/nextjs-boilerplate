@@ -356,3 +356,55 @@ textarea:disabled { opacity: 0.6; }
   color: var(--accent);
   background: var(--accent-light);
 }
+.mq-input {
+  flex: 1;
+  min-height: 44px;
+  background: white;
+  border: 1px solid rgba(45,91,227,0.2);
+  border-radius: 14px;
+  padding: 8px 14px;
+  font-size: 16px;
+  cursor: text;
+  transition: border-color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.mq-input.mq-loading {
+  color: var(--ink-faint);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.mq-input.mq-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.mq-input .mq-editable-field {
+  min-width: 100%;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+
+.mq-input:focus-within {
+  border-color: var(--accent);
+}
+
+.mq-hint {
+  font-size: 11px;
+  color: var(--ink-faint);
+  padding: 6px 20px 10px;
+  background: var(--paper-warm);
+  border-top: 1px solid rgba(45,91,227,0.05);
+}
+
+.mq-hint code {
+  background: var(--accent-light);
+  color: var(--accent);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+}
