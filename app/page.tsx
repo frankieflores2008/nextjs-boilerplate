@@ -268,7 +268,7 @@ export default function Home() {
           <div className="topics-label">Covers all Gavilan math courses</div>
           <div className="chips">
             {topics.map(t => (
-              <button key={t} className="chip" onClick={() => setInput(`I need help with a ${t} problem.`)}>
+              <button key={t} className="chip" onClick={() => sendPractice(t)}>
                 {t}
               </button>
             ))}
