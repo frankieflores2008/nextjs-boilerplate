@@ -129,11 +129,14 @@ export default function Home() {
     if (!mqFieldRef.current) return;
     const latex = mqFieldRef.current.latex().trim();
     if (!latex) return;
-    const display = `\\(${latex}\\)`;
-    const newMessages: Message[] = [...messages, { role: "user", content: display }];
-    setMessages(newMessages);
+    const renderedHTML = mqWrapRef.current?.innerHTML || `\\(${latex}\\)`;
     mqFieldRef.current.latex("");
-    await callAPI(newMessages);
+    const newMessages: Message[] = [...messages, {
+      role: "user",
+      content: renderedHTML,
+    }];
+    setMessages(newMessages);
+    await callAPI([...messages, { role: "user", content: latex }]);
   }
 
   async function sendPractice(topic: string) {
