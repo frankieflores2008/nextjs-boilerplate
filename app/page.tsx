@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Script from "next/script";
 
 const SYSTEM_PROMPT = `You are a math tutor for students at Gavilan College in Gilroy, California. You are warm, patient, and encouraging.
@@ -44,11 +44,13 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: "Hi! I'm your Gavilan math tutor. What problem are you working on today?" }
   ]);
-  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPractice, setShowPractice] = useState(false);
   const [practiceLevel, setPracticeLevel] = useState("Medium");
+  const [mqReady, setMqReady] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const mqWrapRef = useRef<HTMLDivElement>(null);
+  const mqFieldRef = useRef<any>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -71,6 +73,28 @@ export default function Home() {
     });
   }, [messages]);
 
+  const initMathQuill = useCallback(() => {
+    if (!mqWrapRef.current) return;
+    if (mqFieldRef.current) return;
+    const MQ = (window as any).MathQuill?.getInterface(2);
+    if (!MQ) return;
+    mqFieldRef.current = MQ.MathField(mqWrapRef.current, {
+      spaceBehavesLikeTab: false,
+      handlers: {
+        enter: () => { send(); }
+      }
+    });
+    setMqReady(true);
+    mqWrapRef.current.querySelector("textarea")?.focus();
+  }, []);
+
+  function handleJqueryLoad() {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js";
+    s.onload = () => setTimeout(initMathQuill, 100);
+    document.head.appendChild(s);
+  }
+
   async function callAPI(newMessages: Message[]) {
     setLoading(true);
     try {
@@ -85,26 +109,30 @@ export default function Home() {
       }
       const data = await res.json();
       const reply = data.content?.[0]?.text || "Something went wrong, please try again.";
-      setMessages([...newMessages, {
+      setMessages(prev => [...prev, {
         role: "assistant",
         content: reply,
         model: data.model_used,
       }]);
-    } catch (err) {
-      setMessages([...newMessages, {
+    } catch {
+      setMessages(prev => [...prev, {
         role: "assistant",
         content: "Network error — please try again.",
       }]);
     }
     setLoading(false);
+    setTimeout(() => mqWrapRef.current?.querySelector("textarea")?.focus(), 50);
   }
 
   async function send() {
-    const text = input.trim();
-    if (!text || loading) return;
-    const newMessages: Message[] = [...messages, { role: "user", content: text }];
+    if (loading) return;
+    if (!mqFieldRef.current) return;
+    const latex = mqFieldRef.current.latex().trim();
+    if (!latex) return;
+    const display = `\\(${latex}\\)`;
+    const newMessages: Message[] = [...messages, { role: "user", content: display }];
     setMessages(newMessages);
-    setInput("");
+    mqFieldRef.current.latex("");
     await callAPI(newMessages);
   }
 
@@ -119,19 +147,22 @@ export default function Home() {
     await callAPI(apiMessages);
   }
 
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); }
-  }
-
   const topics = ["Arithmetic","Pre-Algebra","Algebra","Geometry","Trigonometry","Pre-Calculus","Calculus","Statistics","Linear Algebra"];
   const difficulties = ["Easy", "Medium", "Hard"];
 
   return (
     <div className="page">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.css"/>
+      <Script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+        strategy="afterInteractive"
+        onLoad={handleJqueryLoad}
+      />
       <Script
         src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
         strategy="afterInteractive"
       />
+
       <header className="header">
         <div className="logo">
           <div className="logo-mark">G</div>
@@ -176,19 +207,19 @@ export default function Home() {
           </div>
 
           <div className="input-area">
-            <textarea
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Describe your math problem..."
-              rows={1}
-              disabled={loading}
+            <div
+              ref={mqWrapRef}
+              className={`mq-input ${loading ? "mq-disabled" : ""} ${!mqReady ? "mq-loading" : ""}`}
+              data-placeholder={mqReady ? "" : "Loading math input..."}
             />
-            <button onClick={send} disabled={loading || !input.trim()}>
+            <button onClick={send} disabled={loading}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
               </svg>
             </button>
+          </div>
+          <div className="mq-hint">
+            Type math naturally — <code>1/2</code> → fraction, <code>sqrt</code> → √, <code>x^2</code> → x²
           </div>
         </div>
 
@@ -196,7 +227,11 @@ export default function Home() {
           <div className="topics-label">Covers all Gavilan math courses</div>
           <div className="chips">
             {topics.map(t => (
-              <button key={t} className="chip" onClick={() => setInput(`I need help with a ${t} problem.`)}>
+              <button key={t} className="chip" onClick={() => {
+                if (!mqFieldRef.current) return;
+                mqFieldRef.current.latex(t.toLowerCase().replace("-", " "));
+                mqWrapRef.current?.querySelector("textarea")?.focus();
+              }}>
                 {t}
               </button>
             ))}
