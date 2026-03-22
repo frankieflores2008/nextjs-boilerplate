@@ -405,3 +405,25 @@ textarea:disabled { opacity: 0.6; }
   border-radius: 4px;
   font-size: 11px;
 }
+
+.mq-input .mq-textarea {
+  position: absolute !important;
+  left: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
+.mq-input .mq-cursor {
+  border-color: var(--accent) !important;
+}
+
+.mq-input span.mq-scaled {
+  display: inline !important;
+  position: static !important;
+}
+
+.mq-input var,
+.mq-input .mq-operator-name {
+  font-style: normal !important;
+}
