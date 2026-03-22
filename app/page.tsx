@@ -136,8 +136,10 @@ export default function Home() {
         content: "Network error — please try again.",
       }]);
     }
+   
     setLoading(false);
-    setTimeout(() => mqWrapRef.current?.querySelector("textarea")?.focus(), 50);
+    mqFieldRef.current = null;
+    setTimeout(() => initMathQuill(), 100);
   }
 
   async function send() {
@@ -146,6 +148,8 @@ export default function Home() {
     const latex = mqFieldRef.current.latex().trim();
     if (!latex) return;
     mqFieldRef.current.latex("");
+    mqFieldRef.current = null;
+    if (mqWrapRef.current) mqWrapRef.current.innerHTML = "";
 
     let displayContent: string;
     try {
