@@ -406,7 +406,15 @@ textarea:disabled { opacity: 0.6; }
   font-size: 11px;
 }
 
-
+.mq-input .mq-textarea {
+  position: absolute !important;
+  clip: rect(0 0 0 0) !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+}
 .mq-input .mq-cursor {
   border-color: var(--accent) !important;
 }
